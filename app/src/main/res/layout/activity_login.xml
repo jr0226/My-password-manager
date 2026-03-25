@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="32dp"
+    android:background="#F5F5F5">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Secure Vault"
+        android:textSize="36sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="32dp"/>
+
+    <EditText
+        android:id="@+id/etLoginPassword"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:hint="Enter Master Password"
+        android:inputType="textPassword"
+        android:background="#1A000000"
+        android:padding="12dp"
+        android:layout_marginBottom="16dp"/>
+
+    <Button
+        android:id="@+id/btnLoginWithPassword"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Login"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="- OR -"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp"/>
+
+    <Button
+        android:id="@+id/btnLoginWithBio"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Unlock with Biometrics"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:backgroundTint="#28A745"
+        android:layout_marginBottom="24dp"/>
+
+    <TextView
+        android:id="@+id/tvForgotPassword"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Forgot Master Password?"
+        android:textColor="#007BFF"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:padding="8dp"/>
+
+</LinearLayout>

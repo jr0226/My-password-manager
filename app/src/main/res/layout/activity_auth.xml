@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="32dp"
+        android:gravity="center">
+
+        <ImageView
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:src="@drawable/ic_launcher_foreground"
+            android:background="@drawable/circle_bg"
+            android:layout_marginBottom="24dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Secure Vault"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:textColor="#2D3748"
+            android:letterSpacing="0.02"
+            android:layout_marginBottom="8dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Your digital life, protected."
+            android:textSize="14sp"
+            android:textColor="#A0AEC0"
+            android:layout_marginBottom="40dp"/>
+
+        <LinearLayout
+            android:id="@+id/layoutLogin"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="visible">
+
+            <EditText
+                android:id="@+id/etLoginPassword"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Master Password"
+                android:inputType="textPassword"
+                android:background="@drawable/rounded_input"
+                android:textColorHint="#A0AEC0"
+                android:layout_marginBottom="24dp"/>
+
+            <Button
+                android:id="@+id/btnLogin"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="Unlock Vault"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:background="@drawable/rounded_button"
+                android:layout_marginBottom="16dp"/>
+
+            <Button
+                android:id="@+id/btnLoginBio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Use Fingerprint"
+                style="?android:attr/buttonBarButtonStyle"
+                android:textColor="#3182CE"/>
+
+            <TextView
+                android:id="@+id/tvForgot"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Recover Account"
+                android:textColor="#A0AEC0"
+                android:layout_gravity="center"
+                android:layout_marginTop="24dp"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/layoutSetup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Create Your Master Key" android:textStyle="bold" android:textColor="#2D3748" android:textSize="16sp" android:layout_marginBottom="16dp"/>
+            <EditText android:id="@+id/etSetupPassword" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="New Password (Min. 6)" android:inputType="textPassword" android:background="@drawable/rounded_input" android:layout_marginBottom="16dp"/>
+            <EditText android:id="@+id/etSetupQuestion1" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Q1: Birth city?" android:background="@drawable/rounded_input" android:layout_marginBottom="12dp"/>
+            <EditText android:id="@+id/etSetupQuestion2" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Q2: Mother's maiden name?" android:background="@drawable/rounded_input" android:layout_marginBottom="12dp"/>
+            <EditText android:id="@+id/etSetupQuestion3" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Q3: First pet's name?" android:background="@drawable/rounded_input" android:layout_marginBottom="24dp"/>
+            <Button android:id="@+id/btnSetupSave" android:layout_width="match_parent" android:layout_height="56dp" android:text="Complete Setup" android:textColor="#FFFFFF" android:background="@drawable/rounded_button"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/layoutRecovery"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <Spinner android:id="@+id/spinnerRecQuestions" android:layout_width="match_parent" android:layout_height="50dp" android:background="@drawable/rounded_input" android:layout_marginBottom="16dp"/>
+            <EditText android:id="@+id/etRecAnswer" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Your Answer" android:background="@drawable/rounded_input" android:layout_marginBottom="16dp"/>
+            <EditText android:id="@+id/etRecNewPass" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="New Master Password" android:inputType="textPassword" android:background="@drawable/rounded_input" android:layout_marginBottom="24dp"/>
+            <Button android:id="@+id/btnRecReset" android:layout_width="match_parent" android:layout_height="56dp" android:text="Secure Reset" android:textColor="#FFFFFF" android:background="@drawable/rounded_button" android:layout_marginBottom="8dp"/>
+            <Button android:id="@+id/btnRecBack" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Back to Login" style="?android:attr/buttonBarButtonStyle" android:textColor="#A0AEC0"/>
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>
