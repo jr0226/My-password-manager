@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="#FFFFFF">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Password Generator"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="#2D3748"
+        android:gravity="center"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:id="@+id/tvGenPreview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/rounded_input"
+        android:padding="16dp"
+        android:text="••••••••••••••••"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="#2D3748"
+        android:gravity="center"
+        android:letterSpacing="0.05"
+        android:textIsSelectable="true" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="16dp">
+
+        <TextView
+            android:id="@+id/tvGenLengthLabel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Length: 16"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#4A5568" />
+
+        <SeekBar
+            android:id="@+id/seekBarLength"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:min="6"
+            android:max="32"
+            android:progress="16" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="12dp">
+
+        <CheckBox
+            android:id="@+id/cbUpper"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Include Uppercase Letters (A-Z)"
+            android:checked="true"
+            android:textColor="#4A5568" />
+
+        <CheckBox
+            android:id="@+id/cbLower"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Include Lowercase Letters (a-z)"
+            android:checked="true"
+            android:textColor="#4A5568" />
+
+        <CheckBox
+            android:id="@+id/cbDigits"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Include Numbers (0-9)"
+            android:checked="true"
+            android:textColor="#4A5568" />
+
+        <CheckBox
+            android:id="@+id/cbSymbols"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Include Special Symbols (!@#$%...)"
+            android:checked="true"
+            android:textColor="#4A5568" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="20dp"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/btnGenRegenerate"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="Regenerate"
+            style="?android:attr/buttonBarButtonStyle"
+            android:textColor="#3182CE" />
+
+        <Button
+            android:id="@+id/btnGenUse"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="Use Password"
+            android:textColor="#FFFFFF"
+            android:background="@drawable/rounded_button" />
+    </LinearLayout>
+</LinearLayout>

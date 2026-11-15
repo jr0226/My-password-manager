@@ -4,6 +4,7 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -18,10 +19,14 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
+import android.widget.ProgressBar;
+import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -347,19 +352,16 @@ public class MainActivity extends AppCompatActivity {
                     String pass;
                     String note = "";
 
-                    // If 5 columns: Site, Category, User, Pass, Note
                     if (cols.size() >= 5) {
                         category = cols.get(1);
                         user = cols.get(2);
                         pass = cols.get(3);
                         note = cols.get(4);
                     } else if (cols.size() == 4) {
-                        // Could be Site, User, Pass, Note
                         user = cols.get(1);
                         pass = cols.get(2);
                         note = cols.get(3);
                     } else {
-                        // 3 columns: Site, User, Pass
                         user = cols.get(1);
                         pass = cols.get(2);
                     }
@@ -394,6 +396,9 @@ public class MainActivity extends AppCompatActivity {
         EditText etUser = dialog.findViewById(R.id.etDialogUser);
         EditText etPass = dialog.findViewById(R.id.etDialogPass);
         TextView btnTogglePass = dialog.findViewById(R.id.btnDialogTogglePass);
+        TextView btnGeneratePass = dialog.findViewById(R.id.btnDialogGeneratePass);
+        ProgressBar progressStrength = dialog.findViewById(R.id.progressStrength);
+        TextView tvStrengthLabel = dialog.findViewById(R.id.tvStrengthLabel);
         EditText etNote = dialog.findViewById(R.id.etDialogNote);
         Button btnSave = dialog.findViewById(R.id.btnDialogSave);
 
@@ -402,6 +407,32 @@ public class MainActivity extends AppCompatActivity {
         spinnerCategory.setAdapter(catAdapter);
 
         currentLogoBase64 = "";
+
+        // Real-time Strength Meter
+        Runnable updateStrength = () -> {
+            String p = etPass.getText().toString();
+            PasswordStrengthUtil.StrengthLevel level = PasswordStrengthUtil.calculateStrength(p);
+            progressStrength.setProgress(level.progressPercent);
+            progressStrength.setProgressTintList(ColorStateList.valueOf(level.getColor()));
+            tvStrengthLabel.setText(level.label);
+            tvStrengthLabel.setTextColor(level.getColor());
+        };
+
+        etPass.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                updateStrength.run();
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+
+        // Generate Password Button
+        btnGeneratePass.setOnClickListener(v -> showPasswordGeneratorDialog(etPass));
 
         // Toggle password mask
         final boolean[] isPasswordVisible = {false};
@@ -442,6 +473,8 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+        updateStrength.run();
+
         // Trigger Image Picker
         btnChangeLogo.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_PICK);
@@ -475,5 +508,72 @@ public class MainActivity extends AppCompatActivity {
         });
 
         dialog.show();
+    }
+
+    // --- INTERACTIVE PASSWORD GENERATOR DIALOG ---
+    public void showPasswordGeneratorDialog(EditText targetField) {
+        android.app.Dialog genDialog = new android.app.Dialog(this);
+        genDialog.setContentView(R.layout.dialog_generator);
+        if (genDialog.getWindow() != null) {
+            genDialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            genDialog.getWindow().setLayout(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+
+        TextView tvPreview = genDialog.findViewById(R.id.tvGenPreview);
+        TextView tvLengthLabel = genDialog.findViewById(R.id.tvGenLengthLabel);
+        SeekBar seekBarLength = genDialog.findViewById(R.id.seekBarLength);
+        CheckBox cbUpper = genDialog.findViewById(R.id.cbUpper);
+        CheckBox cbLower = genDialog.findViewById(R.id.cbLower);
+        CheckBox cbDigits = genDialog.findViewById(R.id.cbDigits);
+        CheckBox cbSymbols = genDialog.findViewById(R.id.cbSymbols);
+        Button btnRegen = genDialog.findViewById(R.id.btnGenRegenerate);
+        Button btnUse = genDialog.findViewById(R.id.btnGenUse);
+
+        Runnable generateNew = () -> {
+            int length = seekBarLength.getProgress();
+            if (length < 6) length = 6;
+            String pass = PasswordGenerator.generate(
+                    length,
+                    cbUpper.isChecked(),
+                    cbLower.isChecked(),
+                    cbDigits.isChecked(),
+                    cbSymbols.isChecked()
+            );
+            tvPreview.setText(pass);
+        };
+
+        seekBarLength.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                int len = Math.max(progress, 6);
+                tvLengthLabel.setText("Length: " + len);
+                generateNew.run();
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
+        CompoundButton.OnCheckedChangeListener checkListener = (buttonView, isChecked) -> generateNew.run();
+        cbUpper.setOnCheckedChangeListener(checkListener);
+        cbLower.setOnCheckedChangeListener(checkListener);
+        cbDigits.setOnCheckedChangeListener(checkListener);
+        cbSymbols.setOnCheckedChangeListener(checkListener);
+
+        btnRegen.setOnClickListener(v -> generateNew.run());
+
+        btnUse.setOnClickListener(v -> {
+            String generated = tvPreview.getText().toString();
+            targetField.setText(generated);
+            targetField.setSelection(generated.length());
+            genDialog.dismiss();
+            Toast.makeText(this, "Generated Password Applied!", Toast.LENGTH_SHORT).show();
+        });
+
+        generateNew.run();
+        genDialog.show();
     }
 }

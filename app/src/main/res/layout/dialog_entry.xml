@@ -23,12 +23,12 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:gravity="center"
-        android:layout_marginBottom="20dp">
+        android:layout_marginBottom="16dp">
 
         <androidx.cardview.widget.CardView
-            android:layout_width="72dp"
-            android:layout_height="72dp"
-            app:cardCornerRadius="36dp"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            app:cardCornerRadius="32dp"
             app:cardElevation="0dp"
             app:cardBackgroundColor="#F0F4F8">
 
@@ -48,7 +48,7 @@
             android:textSize="12sp"
             android:textColor="#3182CE"
             android:textStyle="bold"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="6dp"
             android:padding="4dp"
             android:background="?android:attr/selectableItemBackground"/>
     </LinearLayout>
@@ -76,10 +76,36 @@
         android:background="@drawable/rounded_input"
         android:layout_marginBottom="12dp" />
 
-    <RelativeLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="12dp">
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="4dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Password"
+            android:textSize="12sp"
+            android:textColor="#718096" />
+
+        <TextView
+            android:id="@+id/btnDialogGeneratePass"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="⚡ Generate"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="#3182CE"
+            android:padding="4dp"
+            android:background="?android:attr/selectableItemBackground" />
+    </LinearLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
         <EditText
             android:id="@+id/etDialogPass"
@@ -104,13 +130,40 @@
             android:background="?android:attr/selectableItemBackgroundBorderless" />
     </RelativeLayout>
 
+    <LinearLayout
+        android:id="@+id/layoutStrengthIndicator"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="12dp">
+
+        <ProgressBar
+            android:id="@+id/progressStrength"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="4dp"
+            android:max="100"
+            android:progress="0"
+            android:progressTint="#A0AEC0" />
+
+        <TextView
+            android:id="@+id/tvStrengthLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Enter a password"
+            android:textSize="11sp"
+            android:textColor="#A0AEC0" />
+    </LinearLayout>
+
     <EditText
         android:id="@+id/etDialogNote"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="Notes (Optional)"
         android:background="@drawable/rounded_input"
-        android:layout_marginBottom="24dp" />
+        android:layout_marginBottom="20dp" />
 
     <Button
         android:id="@+id/btnDialogSave"
