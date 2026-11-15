@@ -6,15 +6,21 @@ public class PasswordEntry {
     private String username;
     private String password;
     private String note;
-    private String logoData; // NEW: Holds the image as text!
+    private String logoData;
+    private String category;
 
-    public PasswordEntry(int id, String siteName, String username, String password, String note, String logoData) {
+    public PasswordEntry(int id, String siteName, String username, String password, String note, String logoData, String category) {
         this.id = id;
         this.siteName = siteName;
         this.username = username;
         this.password = password;
         this.note = note;
         this.logoData = logoData;
+        this.category = (category == null || category.trim().isEmpty()) ? "General" : category;
+    }
+
+    public PasswordEntry(int id, String siteName, String username, String password, String note, String logoData) {
+        this(id, siteName, username, password, note, logoData, "General");
     }
 
     // --- GETTERS & SETTERS ---
@@ -31,4 +37,7 @@ public class PasswordEntry {
     public String getNote() { return note; }
 
     public String getLogoData() { return logoData; }
+
+    public String getCategory() { return category != null ? category : "General"; }
+    public void setCategory(String category) { this.category = category; }
 }

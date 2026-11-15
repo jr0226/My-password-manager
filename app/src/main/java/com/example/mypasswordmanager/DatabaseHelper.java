@@ -11,7 +11,7 @@ import java.util.List;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "PasswordVault.db";
-    private static final int DATABASE_VERSION = 3;
+    private static final int DATABASE_VERSION = 4;
     private static final String TABLE_PASSWORDS = "passwords";
 
     private static final String COLUMN_ID = "id";
@@ -20,6 +20,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String COLUMN_PASS = "password";
     private static final String COLUMN_NOTE = "note";
     private static final String COLUMN_LOGO = "logoData";
+    private static final String COLUMN_CATEGORY = "category";
 
     public DatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -33,18 +34,24 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 COLUMN_USER + " TEXT, " +
                 COLUMN_PASS + " TEXT, " +
                 COLUMN_NOTE + " TEXT, " +
-                COLUMN_LOGO + " TEXT)";
+                COLUMN_LOGO + " TEXT, " +
+                COLUMN_CATEGORY + " TEXT DEFAULT 'General')";
         db.execSQL(createTable);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        // Safe migration if needed
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_PASSWORDS);
-        onCreate(db);
+        if (oldVersion < 4) {
+            try {
+                db.execSQL("ALTER TABLE " + TABLE_PASSWORDS + " ADD COLUMN " + COLUMN_CATEGORY + " TEXT DEFAULT 'General'");
+            } catch (Exception e) {
+                db.execSQL("DROP TABLE IF EXISTS " + TABLE_PASSWORDS);
+                onCreate(db);
+            }
+        }
     }
 
-    public long addPassword(String site, String user, String pass, String note, String logoData) {
+    public long addPassword(String site, String user, String pass, String note, String logoData, String category) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COLUMN_SITE, site != null ? site : "");
@@ -52,7 +59,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_PASS, pass != null ? pass : "");
         values.put(COLUMN_NOTE, note != null ? note : "");
         values.put(COLUMN_LOGO, logoData != null ? logoData : "");
+        values.put(COLUMN_CATEGORY, (category != null && !category.trim().isEmpty()) ? category : "General");
         return db.insert(TABLE_PASSWORDS, null, values);
+    }
+
+    public long addPassword(String site, String user, String pass, String note, String logoData) {
+        return addPassword(site, user, pass, note, logoData, "General");
     }
 
     public List<PasswordEntry> getAllPasswords() {
@@ -68,6 +80,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 int passIdx = cursor.getColumnIndex(COLUMN_PASS);
                 int noteIdx = cursor.getColumnIndex(COLUMN_NOTE);
                 int logoIdx = cursor.getColumnIndex(COLUMN_LOGO);
+                int catIdx = cursor.getColumnIndex(COLUMN_CATEGORY);
 
                 do {
                     int id = idIdx != -1 ? cursor.getInt(idIdx) : cursor.getInt(0);
@@ -75,9 +88,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     String user = userIdx != -1 ? cursor.getString(userIdx) : cursor.getString(2);
                     String pass = passIdx != -1 ? cursor.getString(passIdx) : cursor.getString(3);
                     String note = noteIdx != -1 ? cursor.getString(noteIdx) : cursor.getString(4);
-                    String logo = logoIdx != -1 ? cursor.getString(logoIdx) : (cursor.getColumnCount() > 5 ? cursor.getString(5) : "");
+                    String logo = logoIdx != -1 ? cursor.getString(logoIdx) : "";
+                    String category = (catIdx != -1) ? cursor.getString(catIdx) : "General";
 
-                    list.add(new PasswordEntry(id, site, user, pass, note, logo));
+                    list.add(new PasswordEntry(id, site, user, pass, note, logo, category));
                 } while (cursor.moveToNext());
             }
         } catch (Exception e) {
@@ -90,7 +104,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return list;
     }
 
-    public int updatePassword(int id, String site, String user, String pass, String note, String logoData) {
+    public int updatePassword(int id, String site, String user, String pass, String note, String logoData, String category) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COLUMN_SITE, site != null ? site : "");
@@ -98,7 +112,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_PASS, pass != null ? pass : "");
         values.put(COLUMN_NOTE, note != null ? note : "");
         values.put(COLUMN_LOGO, logoData != null ? logoData : "");
+        values.put(COLUMN_CATEGORY, (category != null && !category.trim().isEmpty()) ? category : "General");
         return db.update(TABLE_PASSWORDS, values, COLUMN_ID + " = ?", new String[]{String.valueOf(id)});
+    }
+
+    public int updatePassword(int id, String site, String user, String pass, String note, String logoData) {
+        return updatePassword(id, site, user, pass, note, logoData, "General");
     }
 
     public int deletePassword(int id) {

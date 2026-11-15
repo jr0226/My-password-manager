@@ -44,6 +44,7 @@ public class PasswordAdapter extends RecyclerView.Adapter<PasswordAdapter.Passwo
 
         holder.tvSiteName.setText(entry.getSiteName());
         holder.tvUsername.setText(entry.getUsername());
+        holder.tvCategory.setText(entry.getCategory() != null ? entry.getCategory() : "General");
 
         // Display logo if available
         if (entry.getLogoData() != null && !entry.getLogoData().isEmpty()) {
@@ -84,6 +85,16 @@ public class PasswordAdapter extends RecyclerView.Adapter<PasswordAdapter.Passwo
             } else {
                 holder.tvPassword.setText("••••••••");
                 holder.btnToggle.setText("SHOW");
+            }
+        });
+
+        holder.btnCopyUser.setOnClickListener(v -> {
+            int pos = holder.getBindingAdapterPosition();
+            if (pos == RecyclerView.NO_POSITION || pos >= passwordList.size()) return;
+            PasswordEntry current = passwordList.get(pos);
+
+            if (context instanceof MainActivity) {
+                ((MainActivity) context).copyToClipboard("Username", current.getUsername());
             }
         });
 
@@ -139,9 +150,9 @@ public class PasswordAdapter extends RecyclerView.Adapter<PasswordAdapter.Passwo
     }
 
     public static class PasswordViewHolder extends RecyclerView.ViewHolder {
-        TextView tvSiteName, tvUsername, tvPassword, tvNote;
+        TextView tvSiteName, tvUsername, tvPassword, tvNote, tvCategory;
         ImageView ivLogo;
-        TextView btnToggle, btnEdit, btnDelete, btnCopy;
+        TextView btnToggle, btnEdit, btnDelete, btnCopy, btnCopyUser;
 
         public PasswordViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -149,12 +160,14 @@ public class PasswordAdapter extends RecyclerView.Adapter<PasswordAdapter.Passwo
             tvUsername = itemView.findViewById(R.id.tvItemUsername);
             tvPassword = itemView.findViewById(R.id.tvItemPassword);
             tvNote = itemView.findViewById(R.id.tvItemNote);
+            tvCategory = itemView.findViewById(R.id.tvItemCategory);
             ivLogo = itemView.findViewById(R.id.ivLogo);
 
             btnToggle = itemView.findViewById(R.id.btnToggleVisibility);
             btnEdit = itemView.findViewById(R.id.btnEditEntry);
             btnDelete = itemView.findViewById(R.id.btnDeleteEntry);
             btnCopy = itemView.findViewById(R.id.btnCopyPassword);
+            btnCopyUser = itemView.findViewById(R.id.btnCopyUser);
         }
     }
 }

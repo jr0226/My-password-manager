@@ -10,14 +10,19 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.PersistableBundle;
+import android.text.Editable;
 import android.text.InputType;
+import android.text.TextWatcher;
 import android.util.Base64;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.PopupMenu;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
@@ -25,20 +30,35 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
+    public static final String[] CATEGORIES = {"General", "Work", "Social", "Finance", "Entertainment", "Other"};
+
     private RecyclerView recyclerView;
     private PasswordAdapter adapter;
-    private List<PasswordEntry> passwordList;
+    private List<PasswordEntry> allPasswordList;
+    private List<PasswordEntry> filteredPasswordList;
     private DatabaseHelper dbHelper;
+
+    private EditText etSearch;
+    private TextView btnClearSearch;
+    private ChipGroup chipGroupCategories;
+    private LinearLayout layoutEmptyState;
+    private TextView tvEmptyTitle, tvEmptySubtitle;
+
+    private String selectedCategory = "All";
+    private String currentSearchQuery = "";
 
     // Launchers for opening the phone's file browser safely
     private ActivityResultLauncher<Intent> exportLauncher;
@@ -52,24 +72,32 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Prevent screenshots and secure recent app switcher
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
         setContentView(R.layout.activity_main);
 
         dbHelper = new DatabaseHelper(this);
-        passwordList = new ArrayList<>();
-        adapter = new PasswordAdapter(this, passwordList);
+        allPasswordList = new ArrayList<>();
+        filteredPasswordList = new ArrayList<>();
+        adapter = new PasswordAdapter(this, filteredPasswordList);
 
         recyclerView = findViewById(R.id.recyclerViewPasswords);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
 
+        etSearch = findViewById(R.id.etSearch);
+        btnClearSearch = findViewById(R.id.btnClearSearch);
+        chipGroupCategories = findViewById(R.id.chipGroupCategories);
+        layoutEmptyState = findViewById(R.id.layoutEmptyState);
+        tvEmptyTitle = findViewById(R.id.tvEmptyTitle);
+        tvEmptySubtitle = findViewById(R.id.tvEmptySubtitle);
+
+        setupSearchAndFilters();
         loadPasswords();
 
-        // 1. The Floating Add Button
+        // Add Button
         findViewById(R.id.fabAddPassword).setOnClickListener(v -> showEntryDialog(null));
 
-        // 2. Setup Launchers
+        // Launchers
         exportLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
             if (result.getResultCode() == RESULT_OK && result.getData() != null) {
                 writeCsvToFile(result.getData().getData());
@@ -82,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // 3. Image Picker Launcher
+        // Image Picker Launcher
         imagePickerLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
             if (result.getResultCode() == RESULT_OK && result.getData() != null && result.getData().getData() != null) {
                 try {
@@ -105,7 +133,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // 4. Options Menu
+        // Options Menu
         TextView btnMenu = findViewById(R.id.btnMenu);
         btnMenu.setOnClickListener(v -> {
             PopupMenu popup = new PopupMenu(MainActivity.this, btnMenu);
@@ -133,6 +161,75 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void setupSearchAndFilters() {
+        etSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                currentSearchQuery = s != null ? s.toString().trim() : "";
+                btnClearSearch.setVisibility(currentSearchQuery.isEmpty() ? View.GONE : View.VISIBLE);
+                applyFilters();
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+
+        btnClearSearch.setOnClickListener(v -> etSearch.setText(""));
+
+        chipGroupCategories.setOnCheckedStateChangeListener((group, checkedIds) -> {
+            if (checkedIds.isEmpty()) {
+                selectedCategory = "All";
+            } else {
+                int checkedId = checkedIds.get(0);
+                Chip chip = findViewById(checkedId);
+                selectedCategory = chip != null ? chip.getText().toString() : "All";
+            }
+            applyFilters();
+        });
+    }
+
+    private void applyFilters() {
+        filteredPasswordList.clear();
+        String query = currentSearchQuery.toLowerCase();
+
+        for (PasswordEntry entry : allPasswordList) {
+            boolean matchesCategory = selectedCategory.equalsIgnoreCase("All") ||
+                    (entry.getCategory() != null && entry.getCategory().equalsIgnoreCase(selectedCategory));
+
+            boolean matchesQuery = query.isEmpty() ||
+                    entry.getSiteName().toLowerCase().contains(query) ||
+                    entry.getUsername().toLowerCase().contains(query) ||
+                    (entry.getNote() != null && entry.getNote().toLowerCase().contains(query));
+
+            if (matchesCategory && matchesQuery) {
+                filteredPasswordList.add(entry);
+            }
+        }
+
+        adapter.notifyDataSetChanged();
+        updateEmptyState();
+    }
+
+    private void updateEmptyState() {
+        if (filteredPasswordList.isEmpty()) {
+            layoutEmptyState.setVisibility(View.VISIBLE);
+            recyclerView.setVisibility(View.GONE);
+            if (allPasswordList.isEmpty()) {
+                tvEmptyTitle.setText("Your Vault is Empty");
+                tvEmptySubtitle.setText("Tap the + button below to add your first password.");
+            } else {
+                tvEmptyTitle.setText("No Matches Found");
+                tvEmptySubtitle.setText("Try adjusting your search query or category filter.");
+            }
+        } else {
+            layoutEmptyState.setVisibility(View.GONE);
+            recyclerView.setVisibility(View.VISIBLE);
+        }
+    }
+
     private void lockVault() {
         Intent intent = new Intent(MainActivity.this, AuthActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -141,26 +238,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void loadPasswords() {
-        passwordList.clear();
-        passwordList.addAll(dbHelper.getAllPasswords());
-        adapter.notifyDataSetChanged();
+        allPasswordList.clear();
+        allPasswordList.addAll(dbHelper.getAllPasswords());
+        applyFilters();
     }
 
     public void onEntryDeleted(int id) {
-        for (int i = 0; i < passwordList.size(); i++) {
-            if (passwordList.get(i).getId() == id) {
-                passwordList.remove(i);
-                adapter.notifyItemRemoved(i);
-                adapter.notifyItemRangeChanged(i, passwordList.size());
+        for (int i = 0; i < allPasswordList.size(); i++) {
+            if (allPasswordList.get(i).getId() == id) {
+                allPasswordList.remove(i);
                 break;
             }
         }
+        applyFilters();
     }
 
     public void copyToClipboard(String label, String text) {
         ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
         ClipData clip = ClipData.newPlainText(label, text);
-        // Mark as sensitive on Android 13+ (API 33) to prevent clipboard preview overlays
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             PersistableBundle extras = new PersistableBundle();
             extras.putBoolean("android.content.extra.IS_SENSITIVE", true);
@@ -170,8 +265,7 @@ public class MainActivity extends AppCompatActivity {
         Toast.makeText(this, label + " Copied!", Toast.LENGTH_SHORT).show();
     }
 
-    // --- CSV EXPORT & IMPORT (RFC 4180 COMPLIANT) ---
-
+    // --- CSV EXPORT & IMPORT ---
     private String escapeCsv(String value) {
         if (value == null) return "\"\"";
         return "\"" + value.replace("\"", "\"\"") + "\"";
@@ -185,11 +279,12 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
             StringBuilder csvData = new StringBuilder();
-            csvData.append("Site,Username,Password,Note\n");
+            csvData.append("Site,Category,Username,Password,Note\n");
 
-            for (PasswordEntry entry : passwordList) {
+            for (PasswordEntry entry : allPasswordList) {
                 String plainPassword = EncryptionUtil.decrypt(entry.getPassword());
                 csvData.append(escapeCsv(entry.getSiteName())).append(",")
+                        .append(escapeCsv(entry.getCategory())).append(",")
                         .append(escapeCsv(entry.getUsername())).append(",")
                         .append(escapeCsv(plainPassword)).append(",")
                         .append(escapeCsv(entry.getNote() != null ? entry.getNote() : "")).append("\n");
@@ -241,19 +336,36 @@ public class MainActivity extends AppCompatActivity {
             while ((line = reader.readLine()) != null) {
                 if (line.trim().isEmpty()) continue;
                 if (line.toLowerCase().startsWith("\"site\"") || line.toLowerCase().startsWith("site,")) {
-                    continue; // Skip header
+                    continue;
                 }
 
                 List<String> cols = parseCsvLine(line);
                 if (cols.size() >= 3) {
                     String site = cols.get(0);
-                    String user = cols.get(1);
-                    String pass = cols.get(2);
-                    String note = cols.size() >= 4 ? cols.get(3) : "";
+                    String category = "General";
+                    String user;
+                    String pass;
+                    String note = "";
 
-                    // Encrypt password before storing
+                    // If 5 columns: Site, Category, User, Pass, Note
+                    if (cols.size() >= 5) {
+                        category = cols.get(1);
+                        user = cols.get(2);
+                        pass = cols.get(3);
+                        note = cols.get(4);
+                    } else if (cols.size() == 4) {
+                        // Could be Site, User, Pass, Note
+                        user = cols.get(1);
+                        pass = cols.get(2);
+                        note = cols.get(3);
+                    } else {
+                        // 3 columns: Site, User, Pass
+                        user = cols.get(1);
+                        pass = cols.get(2);
+                    }
+
                     String encryptedPass = EncryptionUtil.encrypt(pass);
-                    dbHelper.addPassword(site, user, encryptedPass, note, "");
+                    dbHelper.addPassword(site, user, encryptedPass, note, "", category);
                     importCount++;
                 }
             }
@@ -278,11 +390,16 @@ public class MainActivity extends AppCompatActivity {
         dialogLogoPreview = dialog.findViewById(R.id.ivDialogLogo);
         TextView btnChangeLogo = dialog.findViewById(R.id.btnChangeLogo);
         EditText etSite = dialog.findViewById(R.id.etDialogSite);
+        Spinner spinnerCategory = dialog.findViewById(R.id.spinnerDialogCategory);
         EditText etUser = dialog.findViewById(R.id.etDialogUser);
         EditText etPass = dialog.findViewById(R.id.etDialogPass);
         TextView btnTogglePass = dialog.findViewById(R.id.btnDialogTogglePass);
         EditText etNote = dialog.findViewById(R.id.etDialogNote);
         Button btnSave = dialog.findViewById(R.id.btnDialogSave);
+
+        // Populate Category Spinner
+        ArrayAdapter<String> catAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, CATEGORIES);
+        spinnerCategory.setAdapter(catAdapter);
 
         currentLogoBase64 = "";
 
@@ -308,6 +425,12 @@ public class MainActivity extends AppCompatActivity {
             etNote.setText(entryToEdit.getNote());
             currentLogoBase64 = entryToEdit.getLogoData();
 
+            // Set spinner category
+            if (entryToEdit.getCategory() != null) {
+                int pos = Arrays.asList(CATEGORIES).indexOf(entryToEdit.getCategory());
+                if (pos >= 0) spinnerCategory.setSelection(pos);
+            }
+
             if (currentLogoBase64 != null && !currentLogoBase64.isEmpty()) {
                 try {
                     byte[] decodedString = Base64.decode(currentLogoBase64, Base64.DEFAULT);
@@ -329,6 +452,7 @@ public class MainActivity extends AppCompatActivity {
         // Save Button Logic
         btnSave.setOnClickListener(v -> {
             String site = etSite.getText().toString().trim();
+            String category = spinnerCategory.getSelectedItem().toString();
             String user = etUser.getText().toString().trim();
             String pass = etPass.getText().toString().trim();
             String note = etNote.getText().toString().trim();
@@ -339,12 +463,10 @@ public class MainActivity extends AppCompatActivity {
             }
 
             if (entryToEdit == null) {
-                // New Password Entry
-                dbHelper.addPassword(site, user, EncryptionUtil.encrypt(pass), note, currentLogoBase64);
+                dbHelper.addPassword(site, user, EncryptionUtil.encrypt(pass), note, currentLogoBase64, category);
                 Toast.makeText(MainActivity.this, "Saved Securely!", Toast.LENGTH_SHORT).show();
             } else {
-                // Update Existing Password
-                dbHelper.updatePassword(entryToEdit.getId(), site, user, EncryptionUtil.encrypt(pass), note, currentLogoBase64);
+                dbHelper.updatePassword(entryToEdit.getId(), site, user, EncryptionUtil.encrypt(pass), note, currentLogoBase64, category);
                 Toast.makeText(MainActivity.this, "Updated Securely!", Toast.LENGTH_SHORT).show();
             }
 
