@@ -10,6 +10,8 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.PersistableBundle;
 import android.text.Editable;
 import android.text.InputType;
@@ -44,7 +46,9 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -64,6 +68,8 @@ public class MainActivity extends AppCompatActivity {
 
     private String selectedCategory = "All";
     private String currentSearchQuery = "";
+
+    private final Handler clipboardHandler = new Handler(Looper.getMainLooper());
 
     // Launchers for opening the phone's file browser safely
     private ActivityResultLauncher<Intent> exportLauncher;
@@ -142,11 +148,14 @@ public class MainActivity extends AppCompatActivity {
         TextView btnMenu = findViewById(R.id.btnMenu);
         btnMenu.setOnClickListener(v -> {
             PopupMenu popup = new PopupMenu(MainActivity.this, btnMenu);
+            popup.getMenu().add("Security Health Audit");
             popup.getMenu().add("Import CSV Backup");
             popup.getMenu().add("Export CSV Backup");
             popup.getMenu().add("Lock Vault");
             popup.setOnMenuItemClickListener(item -> {
-                if ("Import CSV Backup".equals(item.getTitle())) {
+                if ("Security Health Audit".equals(item.getTitle())) {
+                    showSecurityAuditDialog();
+                } else if ("Import CSV Backup".equals(item.getTitle())) {
                     Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                     intent.addCategory(Intent.CATEGORY_OPENABLE);
                     intent.setType("*/*");
@@ -267,7 +276,89 @@ public class MainActivity extends AppCompatActivity {
             clip.getDescription().setExtras(extras);
         }
         clipboard.setPrimaryClip(clip);
-        Toast.makeText(this, label + " Copied!", Toast.LENGTH_SHORT).show();
+
+        if ("Password".equalsIgnoreCase(label)) {
+            Toast.makeText(this, "Password Copied (Auto-clears in 45s)", Toast.LENGTH_SHORT).show();
+            clipboardHandler.removeCallbacksAndMessages(null);
+            clipboardHandler.postDelayed(() -> {
+                try {
+                    ClipboardManager cb = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                    if (cb != null && cb.hasPrimaryClip() && cb.getPrimaryClip() != null) {
+                        ClipData current = cb.getPrimaryClip();
+                        if (current.getItemCount() > 0 && text.equals(current.getItemAt(0).getText().toString())) {
+                            cb.setPrimaryClip(ClipData.newPlainText("", ""));
+                            Toast.makeText(MainActivity.this, "Clipboard auto-cleared for security", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                } catch (Exception ignored) {}
+            }, 45000);
+        } else {
+            Toast.makeText(this, label + " Copied!", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // --- SECURITY AUDIT DIALOG ---
+    public void showSecurityAuditDialog() {
+        android.app.Dialog auditDialog = new android.app.Dialog(this);
+        auditDialog.setContentView(R.layout.dialog_security_audit);
+        if (auditDialog.getWindow() != null) {
+            auditDialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            auditDialog.getWindow().setLayout(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+
+        TextView tvTotal = auditDialog.findViewById(R.id.tvAuditTotal);
+        TextView tvStrong = auditDialog.findViewById(R.id.tvAuditStrong);
+        TextView tvWeak = auditDialog.findViewById(R.id.tvAuditWeak);
+        TextView tvReused = auditDialog.findViewById(R.id.tvAuditReused);
+        TextView tvRecommendation = auditDialog.findViewById(R.id.tvAuditRecommendation);
+        Button btnClose = auditDialog.findViewById(R.id.btnAuditClose);
+
+        int total = allPasswordList.size();
+        int strongCount = 0;
+        int weakCount = 0;
+        Map<String, Integer> passwordCountMap = new HashMap<>();
+
+        for (PasswordEntry entry : allPasswordList) {
+            String plain = EncryptionUtil.decrypt(entry.getPassword());
+            PasswordStrengthUtil.StrengthLevel level = PasswordStrengthUtil.calculateStrength(plain);
+            if (level == PasswordStrengthUtil.StrengthLevel.STRONG) {
+                strongCount++;
+            } else if (level == PasswordStrengthUtil.StrengthLevel.WEAK) {
+                weakCount++;
+            }
+            passwordCountMap.put(plain, passwordCountMap.getOrDefault(plain, 0) + 1);
+        }
+
+        int reusedCount = 0;
+        for (int count : passwordCountMap.values()) {
+            if (count > 1) {
+                reusedCount += count;
+            }
+        }
+
+        tvTotal.setText(String.valueOf(total));
+        tvStrong.setText(String.valueOf(strongCount));
+        tvWeak.setText(String.valueOf(weakCount));
+        tvReused.setText(String.valueOf(reusedCount));
+
+        if (total == 0) {
+            tvRecommendation.setText("Your vault is empty. Add entries to analyze your security health.");
+        } else if (weakCount > 0 || reusedCount > 0) {
+            StringBuilder sb = new StringBuilder("⚠️ Security Action Items:\n");
+            if (weakCount > 0) {
+                sb.append("• ").append(weakCount).append(" passwords are weak and easily guessable.\n");
+            }
+            if (reusedCount > 0) {
+                sb.append("• ").append(reusedCount).append(" accounts share identical passwords. Reusing passwords increases breach risk.\n");
+            }
+            sb.append("\nTip: Use the built-in generator (⚡) to create unique, strong passwords.");
+            tvRecommendation.setText(sb.toString().trim());
+        } else {
+            tvRecommendation.setText("🛡️ Excellent! All your stored credentials are strong and unique.");
+        }
+
+        btnClose.setOnClickListener(v -> auditDialog.dismiss());
+        auditDialog.show();
     }
 
     // --- CSV EXPORT & IMPORT ---
