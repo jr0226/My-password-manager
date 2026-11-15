@@ -18,3 +18,10 @@ local.properties
 
 *.jks
 *.keystore
+
+# Environment and sensitive credential files
+.env
+.env.*
+*.env
+*.key
+*.pem

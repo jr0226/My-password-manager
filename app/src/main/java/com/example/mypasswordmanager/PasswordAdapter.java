@@ -2,14 +2,14 @@ package com.example.mypasswordmanager;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.LinearLayout;
+import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
@@ -23,7 +23,12 @@ public class PasswordAdapter extends RecyclerView.Adapter<PasswordAdapter.Passwo
     public PasswordAdapter(Context context, List<PasswordEntry> passwordList) {
         this.context = context;
         this.passwordList = passwordList;
-        this.dbHelper = new DatabaseHelper(context); // Initialize it
+        this.dbHelper = new DatabaseHelper(context);
+    }
+
+    public void updateList(List<PasswordEntry> newList) {
+        this.passwordList = newList;
+        notifyDataSetChanged();
     }
 
     @NonNull
@@ -40,12 +45,16 @@ public class PasswordAdapter extends RecyclerView.Adapter<PasswordAdapter.Passwo
         holder.tvSiteName.setText(entry.getSiteName());
         holder.tvUsername.setText(entry.getUsername());
 
-        // --- LOGIC FOR REAL IMAGE LOGO ---
+        // Display logo if available
         if (entry.getLogoData() != null && !entry.getLogoData().isEmpty()) {
             try {
-                byte[] decodedString = android.util.Base64.decode(entry.getLogoData(), android.util.Base64.DEFAULT);
-                android.graphics.Bitmap decodedByte = android.graphics.BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
-                holder.ivLogo.setImageBitmap(decodedByte);
+                byte[] decodedString = Base64.decode(entry.getLogoData(), Base64.DEFAULT);
+                Bitmap decodedByte = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+                if (decodedByte != null) {
+                    holder.ivLogo.setImageBitmap(decodedByte);
+                } else {
+                    holder.ivLogo.setImageResource(R.drawable.ic_launcher_foreground);
+                }
             } catch (Exception e) {
                 holder.ivLogo.setImageResource(R.drawable.ic_launcher_foreground);
             }
@@ -53,9 +62,9 @@ public class PasswordAdapter extends RecyclerView.Adapter<PasswordAdapter.Passwo
             holder.ivLogo.setImageResource(R.drawable.ic_launcher_foreground);
         }
 
-        // --- LOGIC FOR NOTES ---
-        if (entry.getNote() != null && !entry.getNote().isEmpty()) {
-            holder.tvNote.setText("Note: " + entry.getNote());
+        // Display notes if available
+        if (entry.getNote() != null && !entry.getNote().trim().isEmpty()) {
+            holder.tvNote.setText("Note: " + entry.getNote().trim());
             holder.tvNote.setVisibility(View.VISIBLE);
         } else {
             holder.tvNote.setVisibility(View.GONE);
@@ -65,8 +74,12 @@ public class PasswordAdapter extends RecyclerView.Adapter<PasswordAdapter.Passwo
         holder.btnToggle.setText("SHOW");
 
         holder.btnToggle.setOnClickListener(v -> {
+            int pos = holder.getBindingAdapterPosition();
+            if (pos == RecyclerView.NO_POSITION || pos >= passwordList.size()) return;
+            PasswordEntry current = passwordList.get(pos);
+
             if (holder.btnToggle.getText().toString().equalsIgnoreCase("SHOW")) {
-                holder.tvPassword.setText(EncryptionUtil.decrypt(entry.getPassword()));
+                holder.tvPassword.setText(EncryptionUtil.decrypt(current.getPassword()));
                 holder.btnToggle.setText("HIDE");
             } else {
                 holder.tvPassword.setText("••••••••");
@@ -75,32 +88,48 @@ public class PasswordAdapter extends RecyclerView.Adapter<PasswordAdapter.Passwo
         });
 
         holder.btnCopy.setOnClickListener(v -> {
-            // Get the clipboard service
-            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
-            // Decrypt the password and put it in the clipboard
-            android.content.ClipData clip = android.content.ClipData.newPlainText("Saved Password", EncryptionUtil.decrypt(entry.getPassword()));
-            clipboard.setPrimaryClip(clip);
-            // Show a success message
-            Toast.makeText(context, "Password Copied!", Toast.LENGTH_SHORT).show();
+            int pos = holder.getBindingAdapterPosition();
+            if (pos == RecyclerView.NO_POSITION || pos >= passwordList.size()) return;
+            PasswordEntry current = passwordList.get(pos);
+
+            String decrypted = EncryptionUtil.decrypt(current.getPassword());
+            if (context instanceof MainActivity) {
+                ((MainActivity) context).copyToClipboard("Password", decrypted);
+            }
         });
 
         holder.btnDelete.setOnClickListener(v -> {
+            int pos = holder.getBindingAdapterPosition();
+            if (pos == RecyclerView.NO_POSITION || pos >= passwordList.size()) return;
+            PasswordEntry current = passwordList.get(pos);
+
             new AlertDialog.Builder(context)
-                    .setTitle("Delete")
-                    .setMessage("Are you sure?")
-                    .setPositiveButton("Yes", (dialog, which) -> {
-                        dbHelper.deletePassword(entry.getId());
-                        passwordList.remove(position);
-                        notifyItemRemoved(position);
-                        notifyItemRangeChanged(position, passwordList.size());
+                    .setTitle("Delete Entry")
+                    .setMessage("Are you sure you want to delete '" + current.getSiteName() + "'?")
+                    .setPositiveButton("Delete", (dialog, which) -> {
+                        int currentPos = holder.getBindingAdapterPosition();
+                        if (currentPos != RecyclerView.NO_POSITION && currentPos < passwordList.size()) {
+                            dbHelper.deletePassword(current.getId());
+                            if (context instanceof MainActivity) {
+                                ((MainActivity) context).onEntryDeleted(current.getId());
+                            } else {
+                                passwordList.remove(currentPos);
+                                notifyItemRemoved(currentPos);
+                            }
+                        }
                     })
                     .setNegativeButton("Cancel", null)
                     .show();
         });
 
-        // --- EDIT BUTTON LOGIC ---
         holder.btnEdit.setOnClickListener(v -> {
-            ((MainActivity) context).showEntryDialog(entry);
+            int pos = holder.getBindingAdapterPosition();
+            if (pos == RecyclerView.NO_POSITION || pos >= passwordList.size()) return;
+            PasswordEntry current = passwordList.get(pos);
+
+            if (context instanceof MainActivity) {
+                ((MainActivity) context).showEntryDialog(current);
+            }
         });
     }
 
@@ -111,9 +140,7 @@ public class PasswordAdapter extends RecyclerView.Adapter<PasswordAdapter.Passwo
 
     public static class PasswordViewHolder extends RecyclerView.ViewHolder {
         TextView tvSiteName, tvUsername, tvPassword, tvNote;
-        android.widget.ImageView ivLogo;
-
-        // 1.  DECLARE ALL 4 BUTTONS HERE (Including Copy!)
+        ImageView ivLogo;
         TextView btnToggle, btnEdit, btnDelete, btnCopy;
 
         public PasswordViewHolder(@NonNull View itemView) {
@@ -124,11 +151,10 @@ public class PasswordAdapter extends RecyclerView.Adapter<PasswordAdapter.Passwo
             tvNote = itemView.findViewById(R.id.tvItemNote);
             ivLogo = itemView.findViewById(R.id.ivLogo);
 
-            // 2.  LINK THEM TO THE XML IDs HERE
             btnToggle = itemView.findViewById(R.id.btnToggleVisibility);
             btnEdit = itemView.findViewById(R.id.btnEditEntry);
             btnDelete = itemView.findViewById(R.id.btnDeleteEntry);
-            btnCopy = itemView.findViewById(R.id.btnCopyPassword); // <- The missing piece!
+            btnCopy = itemView.findViewById(R.id.btnCopyPassword);
         }
     }
 }

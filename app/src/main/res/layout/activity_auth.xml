@@ -91,9 +91,9 @@
 
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Create Your Master Key" android:textStyle="bold" android:textColor="#2D3748" android:textSize="16sp" android:layout_marginBottom="16dp"/>
             <EditText android:id="@+id/etSetupPassword" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="New Password (Min. 6)" android:inputType="textPassword" android:background="@drawable/rounded_input" android:layout_marginBottom="16dp"/>
-            <EditText android:id="@+id/etSetupQuestion1" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Q1: Birth city?" android:background="@drawable/rounded_input" android:layout_marginBottom="12dp"/>
-            <EditText android:id="@+id/etSetupQuestion2" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Q2: Mother's maiden name?" android:background="@drawable/rounded_input" android:layout_marginBottom="12dp"/>
-            <EditText android:id="@+id/etSetupQuestion3" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Q3: First pet's name?" android:background="@drawable/rounded_input" android:layout_marginBottom="24dp"/>
+            <EditText android:id="@+id/etSetupQuestion1" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Q1: What city were you born in?" android:background="@drawable/rounded_input" android:layout_marginBottom="12dp"/>
+            <EditText android:id="@+id/etSetupQuestion2" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Q2: What is your primary school name?" android:background="@drawable/rounded_input" android:layout_marginBottom="12dp"/>
+            <EditText android:id="@+id/etSetupQuestion3" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Q3: What was the name of your first pet?" android:background="@drawable/rounded_input" android:layout_marginBottom="24dp"/>
             <Button android:id="@+id/btnSetupSave" android:layout_width="match_parent" android:layout_height="56dp" android:text="Complete Setup" android:textColor="#FFFFFF" android:background="@drawable/rounded_button"/>
         </LinearLayout>
 

@@ -23,12 +23,12 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:gravity="center"
-        android:layout_marginBottom="24dp">
+        android:layout_marginBottom="20dp">
 
         <androidx.cardview.widget.CardView
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            app:cardCornerRadius="40dp"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            app:cardCornerRadius="36dp"
             app:cardElevation="0dp"
             app:cardBackgroundColor="#F0F4F8">
 
@@ -53,10 +53,63 @@
             android:background="?android:attr/selectableItemBackground"/>
     </LinearLayout>
 
-    <EditText android:id="@+id/etDialogSite" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Website Name" android:background="@drawable/rounded_input" android:layout_marginBottom="12dp" />
-    <EditText android:id="@+id/etDialogUser" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Username / Email" android:background="@drawable/rounded_input" android:layout_marginBottom="12dp" />
-    <EditText android:id="@+id/etDialogPass" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Password" android:background="@drawable/rounded_input" android:layout_marginBottom="12dp" />
-    <EditText android:id="@+id/etDialogNote" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Notes (Optional)" android:background="@drawable/rounded_input" android:layout_marginBottom="24dp" />
+    <EditText
+        android:id="@+id/etDialogSite"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Website / App Name"
+        android:background="@drawable/rounded_input"
+        android:layout_marginBottom="12dp" />
 
-    <Button android:id="@+id/btnDialogSave" android:layout_width="match_parent" android:layout_height="56dp" android:text="Save Entry" android:textColor="#FFFFFF" android:background="@drawable/rounded_button"/>
+    <EditText
+        android:id="@+id/etDialogUser"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Username / Email"
+        android:background="@drawable/rounded_input"
+        android:layout_marginBottom="12dp" />
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp">
+
+        <EditText
+            android:id="@+id/etDialogPass"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Password"
+            android:inputType="textPassword"
+            android:background="@drawable/rounded_input"
+            android:paddingEnd="56dp" />
+
+        <TextView
+            android:id="@+id/btnDialogTogglePass"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:text="SHOW"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="#3182CE"
+            android:padding="12dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless" />
+    </RelativeLayout>
+
+    <EditText
+        android:id="@+id/etDialogNote"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Notes (Optional)"
+        android:background="@drawable/rounded_input"
+        android:layout_marginBottom="24dp" />
+
+    <Button
+        android:id="@+id/btnDialogSave"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="Save Entry"
+        android:textColor="#FFFFFF"
+        android:background="@drawable/rounded_button"/>
 </LinearLayout>

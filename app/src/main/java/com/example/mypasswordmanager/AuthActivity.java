@@ -4,12 +4,11 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
-import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -23,9 +22,17 @@ public class AuthActivity extends AppCompatActivity {
     private LinearLayout layoutSetup, layoutLogin, layoutRecovery;
     private SharedPreferences prefs;
 
+    public static final String[] SECURITY_QUESTIONS = {
+            "What city were you born in?",
+            "What is your primary school name?",
+            "What was the name of your first pet?"
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Prevent screenshots and secure against recent app previews
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
         setContentView(R.layout.activity_auth);
 
         prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
@@ -36,7 +43,7 @@ public class AuthActivity extends AppCompatActivity {
 
         checkUserState();
         setupClickListeners();
-        setupRecoverySpinner(); // Setup the dropdown menu
+        setupRecoverySpinner();
     }
 
     private void checkUserState() {
@@ -53,12 +60,7 @@ public class AuthActivity extends AppCompatActivity {
 
     private void setupRecoverySpinner() {
         Spinner spinner = findViewById(R.id.spinnerRecQuestions);
-        String[] questions = {
-                "What city were you born in?",
-                "What is your primary school name?",
-                "What was the name of your first pet?"
-        };
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, questions);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, SECURITY_QUESTIONS);
         spinner.setAdapter(adapter);
     }
 
@@ -70,19 +72,19 @@ public class AuthActivity extends AppCompatActivity {
             String ans2 = ((EditText) findViewById(R.id.etSetupQuestion2)).getText().toString().trim().toLowerCase();
             String ans3 = ((EditText) findViewById(R.id.etSetupQuestion3)).getText().toString().trim().toLowerCase();
 
-            // CHECK 1: Length Validation
+            // Length Validation
             if (pass.length() < 6) {
                 Toast.makeText(this, "Password must be at least 6 characters!", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            // CHECK 2: Empty Validation
+            // Empty Validation
             if (ans1.isEmpty() || ans2.isEmpty() || ans3.isEmpty()) {
                 Toast.makeText(this, "Please answer all 3 security questions!", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            // Save all hashes to local storage
+            // Save hashes to local storage
             SharedPreferences.Editor editor = prefs.edit();
             editor.putString("master_hash", EncryptionUtil.hashPassword(pass));
             editor.putString("ans1_hash", EncryptionUtil.hashPassword(ans1));
@@ -99,7 +101,7 @@ public class AuthActivity extends AppCompatActivity {
             String inputPass = ((EditText) findViewById(R.id.etLoginPassword)).getText().toString().trim();
             String savedHash = prefs.getString("master_hash", "");
 
-            if (EncryptionUtil.hashPassword(inputPass).equals(savedHash)) {
+            if (!savedHash.isEmpty() && EncryptionUtil.hashPassword(inputPass).equals(savedHash)) {
                 goToVault();
             } else {
                 Toast.makeText(this, "Incorrect Password", Toast.LENGTH_SHORT).show();
@@ -118,7 +120,7 @@ public class AuthActivity extends AppCompatActivity {
 
         findViewById(R.id.btnRecReset).setOnClickListener(v -> {
             Spinner spinner = findViewById(R.id.spinnerRecQuestions);
-            int selectedQuestionIndex = spinner.getSelectedItemPosition(); // Will be 0, 1, or 2
+            int selectedQuestionIndex = spinner.getSelectedItemPosition();
 
             String inputAns = ((EditText) findViewById(R.id.etRecAnswer)).getText().toString().trim().toLowerCase();
             String newPass = ((EditText) findViewById(R.id.etRecNewPass)).getText().toString().trim();
@@ -128,13 +130,18 @@ public class AuthActivity extends AppCompatActivity {
                 return;
             }
 
+            if (inputAns.isEmpty()) {
+                Toast.makeText(this, "Please enter your answer", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             String targetHash = "";
             if (selectedQuestionIndex == 0) targetHash = prefs.getString("ans1_hash", "");
             else if (selectedQuestionIndex == 1) targetHash = prefs.getString("ans2_hash", "");
             else if (selectedQuestionIndex == 2) targetHash = prefs.getString("ans3_hash", "");
 
             // Verify and Reset
-            if (EncryptionUtil.hashPassword(inputAns).equals(targetHash)) {
+            if (!targetHash.isEmpty() && EncryptionUtil.hashPassword(inputAns).equals(targetHash)) {
                 prefs.edit().putString("master_hash", EncryptionUtil.hashPassword(newPass)).apply();
                 Toast.makeText(this, "Password Reset Successfully! Please Login.", Toast.LENGTH_LONG).show();
                 checkUserState();
@@ -145,6 +152,15 @@ public class AuthActivity extends AppCompatActivity {
     }
 
     private void setupBiometricAuth() {
+        BiometricManager biometricManager = BiometricManager.from(this);
+        int canAuthenticate = biometricManager.canAuthenticate(
+                BiometricManager.Authenticators.BIOMETRIC_STRONG | BiometricManager.Authenticators.DEVICE_CREDENTIAL
+        );
+        if (canAuthenticate != BiometricManager.BIOMETRIC_SUCCESS) {
+            Toast.makeText(this, "Biometrics / Device Credential not available", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         Executor executor = ContextCompat.getMainExecutor(this);
         BiometricPrompt biometricPrompt = new BiometricPrompt(this, executor, new BiometricPrompt.AuthenticationCallback() {
             @Override
@@ -152,13 +168,27 @@ public class AuthActivity extends AppCompatActivity {
                 super.onAuthenticationSucceeded(result);
                 goToVault();
             }
+
+            @Override
+            public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
+                super.onAuthenticationError(errorCode, errString);
+                if (errorCode != BiometricPrompt.ERROR_USER_CANCELED && errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON) {
+                    Toast.makeText(AuthActivity.this, "Authentication error: " + errString, Toast.LENGTH_SHORT).show();
+                }
+            }
         });
 
         BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
-                .setTitle("Unlock Password Manager")
+                .setTitle("Unlock Secure Vault")
+                .setSubtitle("Use your biometric credential to unlock")
                 .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG | BiometricManager.Authenticators.DEVICE_CREDENTIAL)
                 .build();
-        biometricPrompt.authenticate(promptInfo);
+
+        try {
+            biometricPrompt.authenticate(promptInfo);
+        } catch (Exception e) {
+            Toast.makeText(this, "Biometric authentication failed to start", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void goToVault() {
